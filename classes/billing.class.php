@@ -372,11 +372,11 @@ class Billing
 		
 		// Invoice code start
 		$invoice_code = 1;
-		$dbConn->FetchAllData("LOCK TABLE invoiceseries IN ACCESS EXCLUSIVE MODE;Select last_value from invoiceseries",$arInvoiceCode,$iICRows);
+		$dbConn->FetchAllData("LOCK TABLE invoice_series IN ACCESS EXCLUSIVE MODE;Select last_value from invoice_series",$arInvoiceCode,$iICRows);
 		if($iICRows>0){
 			$invoice_code = $arInvoiceCode[0]['last_value'] + 1;
 		}
-		$dbConn->FetchAllData("Update invoiceseries set last_value=$invoice_code",$arICUpdate, $iICURows);
+		$dbConn->FetchAllData("Update invoice_series set last_value=$invoice_code",$arICUpdate, $iICURows);
 		// Invoice code end
 
 		$tally_status = 0;
