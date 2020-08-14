@@ -51,7 +51,7 @@ class Billing
 
 		//Get The User id and invoice details from invoice id 
 		if(is_numeric($invoice_id)) {
-			$dbConn->FetchAllData("select * from tbl_invoices where invoice_id=$invoice_id",$arInvoiceSearch,$iURows);
+			$dbConn->FetchAllData("select * from invoice where invoice_id=$invoice_id",$arInvoiceSearch,$iURows);
 			if ($iURows == 0) 
 			{
 				$message = "invoice is not available";
@@ -382,7 +382,7 @@ class Billing
 		$tally_status = 0;
 		
 		//added tally status column
-		$dbConn->FetchAllData("Insert into tbl_invoices(user_id,invoice_currency, previous_balance,  invoice_description,user_description, invoice_code, invoice_type, po_number,invoice_source, tally_status) values ({$invoice_add_params['user_id']},$invoice_currency, $previous_balance, $invoice_description,$user_description, $invoice_code, $invoice_type, $po_number, $invoice_source, $tally_status) RETURNING invoice_id",$arInvoice,$iIRows);
+		$dbConn->FetchAllData("Insert into invoice(user_id,invoice_currency, previous_balance,  invoice_description,user_description, invoice_code, invoice_type, po_number,invoice_source, tally_status) values ({$invoice_add_params['user_id']},$invoice_currency, $previous_balance, $invoice_description,$user_description, $invoice_code, $invoice_type, $po_number, $invoice_source, $tally_status) RETURNING invoice_id",$arInvoice,$iIRows);
 		if($iIRows>0){
 			$invoice_id = $arInvoice[0]['invoice_id'];
 		}else{
@@ -456,7 +456,7 @@ class Billing
 		}
 		// Add invoice items code end
 		// Update invoice with total amount
-		$dbConn->ExecuteQuery("Update tbl_invoices set total_amount=$total_amount where invoice_id=$invoice_id",$iUIMRows);
+		$dbConn->ExecuteQuery("Update invoice set total_amount=$total_amount where invoice_id=$invoice_id",$iUIMRows);
 		$dbConn->ExecuteQuery('COMMIT',$iRows);
 
 		if($iUIMRows > 0){
@@ -486,7 +486,7 @@ class Billing
 			$payment_date		= @$invoice_search_params[0]['payment_date'];						
 			$invoice_type		= @$invoice_search_params[0]['invoice_type'];
 	
-				$invoice_search_sql	= "select a.*, b.userid	as buserid from tbl_invoices as a left join tblusers as b on b.userid=a.user_id where  1=1 ";
+				$invoice_search_sql	= "select a.*, b.userid	as buserid from invoice as a left join tblusers as b on b.userid=a.user_id where  1=1 ";
 				
 				if( is_numeric($invoice_id))				
 					$invoice_search_sql .= " AND a.invoice_id = $invoice_id ";
@@ -622,7 +622,7 @@ class Billing
 				return 1;
 			}			
 			@$dbConn->ExecuteQuery("BEGIN;",$iRows);
-			$invoice_update_sql = "UPDATE tbl_invoices SET invoice_id=$invoice_id";		
+			$invoice_update_sql = "UPDATE invoice SET invoice_id=$invoice_id";		
 
 			if(is_numeric($invoice_code))
 				$invoice_update_sql .= ", invoice_code = $invoice_code";
@@ -633,7 +633,7 @@ class Billing
 
 				if($invoice_status == -1)
 				{
-					$invoice_search_sql = "SELECT * FROM tbl_invoices WHERE invoice_id = $invoice_id";
+					$invoice_search_sql = "SELECT * FROM invoice WHERE invoice_id = $invoice_id";
 					@$dbConn->FetchAllData($invoice_search_sql,$arInvoice,$iRows);	
 					$invoice_date	= $arInvoice[0]['invoice_date'];
 					$user_id		= $arInvoice[0]['user_id'];
@@ -668,7 +668,7 @@ class Billing
 				}
 				else
 				{
-					if(!strpos($error_string, "tbl_invoices_pkey")===false)
+					if(!strpos($error_string, "invoice_pkey")===false)
 					{
 						$message = "Invalid invoice id specified";
 						return 6;
@@ -697,7 +697,7 @@ class Billing
 			return __LINE__;
 		}
 
-		$dbConn->FetchAllData("SELECT a.*,b.invoice_code FROM invoice_items as a,tbl_invoices as b WHERE a.invoice_id=b.invoice_id and a.invoice_id = $invoice_id",$arInvoiceItems,$iRows);
+		$dbConn->FetchAllData("SELECT a.*,b.invoice_code FROM invoice_items as a,invoice as b WHERE a.invoice_id=b.invoice_id and a.invoice_id = $invoice_id",$arInvoiceItems,$iRows);
 
 		if($iRows == 0){
 			$message = "Please provide a valid invoice id.";
@@ -721,7 +721,7 @@ class Billing
 			return __LINE__;
 		}
 
-		$dbConn->FetchAllData("SELECT * FROM tbl_invoices WHERE invoice_id = $invoice_id and invoice_status=0 and invoice_source=0",$arInvoice,$iRows);
+		$dbConn->FetchAllData("SELECT * FROM invoice WHERE invoice_id = $invoice_id and invoice_status=0 and invoice_source=0",$arInvoice,$iRows);
 
 		if($iRows == 0){
 			$message = "Please provide a valid invoice id.";
@@ -747,11 +747,11 @@ class Billing
 			return __LINE__;
 		}
 		
-		$dbConn->ExecuteQuery("update invoice_items set status = -1 where invoice_id = $invoice_id;update tbl_invoices set invoice_status = -1 where invoice_id = $invoice_id;",$iUIRows);
+		$dbConn->ExecuteQuery("update invoice_items set status = -1 where invoice_id = $invoice_id;update invoice set invoice_status = -1 where invoice_id = $invoice_id;",$iUIRows);
 		//Insert previous rows values with login user id
-		$dbConn->FetchAllData("select row_to_json(t) as row_to_json from (select * from tbl_invoices where invoice_id = $invoice_id) t", $arLogArray, $iILRows);
+		$dbConn->FetchAllData("select row_to_json(t) as row_to_json from (select * from invoice where invoice_id = $invoice_id) t", $arLogArray, $iILRows);
 		$json_data = $arLogArray[0]['row_to_json'];
-		$dbConn->ExecuteQuery("insert into tbllogdata(log_user_id,log_data,log_table) values ($login_user_id,'{$json_data}','tbl_invoices')",$iLGRows);
+		$dbConn->ExecuteQuery("insert into tbllogdata(log_user_id,log_data,log_table) values ($login_user_id,'{$json_data}','invoice')",$iLGRows);
 		
 		$dbConn->ExecuteQuery("COMMIT;",$iRows);
 
@@ -929,7 +929,7 @@ class Billing
 
 		// get last invoice
 		$outstanding_amount = 0;
-		$sqlBalance= "select total_amount, previous_balance, invoice_date from tbl_invoices where user_id=".$balance_params['user_id']." and invoice_date <= {$balance_params['balance_date']} order by invoice_id desc Limit 1";
+		$sqlBalance= "select total_amount, previous_balance, invoice_date from invoice where user_id=".$balance_params['user_id']." and invoice_date <= {$balance_params['balance_date']} order by invoice_id desc Limit 1";
 		$dbConn->FetchAllData($sqlBalance, $arBalance, $iBRows);
 		if($iBRows>0){
 			$outstanding_amount = $arBalance[0]['total_amount'] + $arBalance[0]['previous_balance'];
@@ -983,7 +983,7 @@ class Billing
 
 		$dbConn->ExecuteQuery("SET TIME ZONE 'Asia/Kolkata';", $iSRows);
 
-		$invoice_query = "Select invoice_id, cast (invoice_date as timestamp(0)) as statement_date, total_amount,1 as data_type,invoice_status,invoice_type,invoice_source, invoice_code, tally_status, invoice_description as note, username,company_name,address from tbl_invoices as a, tblusers as b where a.user_id=b.userid and (invoice_date between {$statement_params['start_date']} and {$statement_params['end_date']})  ";
+		$invoice_query = "Select invoice_id, cast (invoice_date as timestamp(0)) as statement_date, total_amount,1 as data_type,invoice_status,invoice_type,invoice_source, invoice_code, tally_status, invoice_description as note, username,company_name,address from invoice as a, tblusers as b where a.user_id=b.userid and (invoice_date between {$statement_params['start_date']} and {$statement_params['end_date']})  ";
 
 		if(is_numeric($statement_params['user_id']))
 			$invoice_query .= " and a.user_id={$statement_params['user_id']}";
@@ -1229,12 +1229,12 @@ class Billing
 		//Get The User id via invoice id or invoice type id 
 		if(is_numeric($invoice_id))
 		{
-			$dbConn->FetchAllData("select * from tbl_invoices where invoice_id=$invoice_id",$arUserSearch,$iURows);
+			$dbConn->FetchAllData("select * from invoice where invoice_id=$invoice_id",$arUserSearch,$iURows);
 		
 		}
 		elseif(is_numeric($invoice_item_id))
 		{
-			$dbConn->FetchAllData("select a.user_id from tbl_invoices as a,invoice_items as b where a.invoice_id=b.invoice_id and b.invoice_item_id=$invoice_item_id",$arUserSearch,$iURows);
+			$dbConn->FetchAllData("select a.user_id from invoice as a,invoice_items as b where a.invoice_id=b.invoice_id and b.invoice_item_id=$invoice_item_id",$arUserSearch,$iURows);
 		}
 
 		$user_id = $arUserSearch[0]['user_id'];
@@ -1267,7 +1267,7 @@ class Billing
 		{		
 			$invoice_template_decode= file_get_contents($invoice_print_params['static_server_path']."/invoice_cons.html");	
 			$final_data = '';
-			$searchInvoiceItems= "select a.*,b.invoice_date,b.user_description from invoice_items as a,tbl_invoices as b where a.invoice_id=b.invoice_id and a.invoice_item_id=".$invoice_item_id;
+			$searchInvoiceItems= "select a.*,b.invoice_date,b.user_description from invoice_items as a,invoice as b where a.invoice_id=b.invoice_id and a.invoice_item_id=".$invoice_item_id;
 			$dbConn->ExecuteSelectQuery($searchInvoiceItems, $resultInvoiceItem, $iIRows);
 			if($iIRows>0)
 			{
@@ -1310,7 +1310,7 @@ class Billing
 		{
 			//selecting the last invoice date
 			$invoice_date	= '';
-			$searchInvoice= "select * from tbl_invoices where invoice_id=$invoice_id";
+			$searchInvoice= "select * from invoice where invoice_id=$invoice_id";
 			$dbConn->ExecuteSelectQuery($searchInvoice, $resultInvoice, $iRows);
 			if($iRows>0)
 			{
@@ -1679,7 +1679,7 @@ class Billing
 				return 1;
 			}		
 			
-			$invoice_sql	="select invoice_id, invoice_date, total_amount,1 as data_type,invoice_status,invoice_type, 	invoice_currency from tbl_invoices where user_id=$user_id ";
+			$invoice_sql	="select invoice_id, invoice_date, total_amount,1 as data_type,invoice_status,invoice_type, 	invoice_currency from invoice where user_id=$user_id ";
 
 			$payment_sql	="select payment_id, payment_date, total_amount,2 as data_type, payment_mode,-1 as invoice_type,payment_note from tblpayments where user_id= $user_id and payment_status=0 ";
 
